@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>China Family Journey 2027</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: porcelain sheet; slim header with live total, tab bar, then one working view at a time (route map, day planner, budget, essentials, customise). */
+:root{
+  --paper:#F5F7FA; --sheet:#FFFFFF; --ink:#16213A; --muted:#5B6578; --line:#DCE2EC;
+  --cobalt:#1F4FA3; --cobalt-soft:#E4ECF9; --jade:#2C7A66; --jade-soft:#E1F1EC;
+  --cinnabar:#B8432C; --cinnabar-soft:#F8E6E1; --amber:#9A6A12; --amber-soft:#F7EED9;
+  --road:#7A8496; --plum:#7B3F8C; --teal:#1C7F8F;
+  --f-display:"Young Serif",Georgia,"Times New Roman",serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0D1320; --sheet:#151D2D; --ink:#E5EAF3; --muted:#9AA5B8; --line:#26324A;
+  --cobalt:#86AAF2; --cobalt-soft:#1B2A48; --jade:#5FC3A8; --jade-soft:#14302A;
+  --cinnabar:#F0846C; --cinnabar-soft:#3A1F1A; --amber:#E2B65C; --amber-soft:#33291A; --road:#8D97AA; --plum:#C995D8; --teal:#5CC6D6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0D1320; --sheet:#151D2D; --ink:#E5EAF3; --muted:#9AA5B8; --line:#26324A;
+  --cobalt:#86AAF2; --cobalt-soft:#1B2A48; --jade:#5FC3A8; --jade-soft:#14302A;
+  --cinnabar:#F0846C; --cinnabar-soft:#3A1F1A; --amber:#E2B65C; --amber-soft:#33291A; --road:#8D97AA; --plum:#C995D8; --teal:#5CC6D6; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+.wrap{max-width:1120px;margin:0 auto}
+h1,h2,h3{font-family:var(--f-display);font-weight:400;text-wrap:balance;margin:0}
+h1{font-size:clamp(28px,5vw,44px);line-height:1.1}
+h2{font-size:24px;line-height:1.2}
+h3{font-size:18px;line-height:1.3}
+p{margin:0}
+.mono,.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--cobalt);outline-offset:2px}
+
+/* header */
+header.top{padding-top:28px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:end}
+.seal{display:inline-grid;place-items:center;width:34px;height:34px;border:1.5px solid var(--cinnabar);color:var(--cinnabar);font-family:var(--f-display);font-size:18px;border-radius:4px;margin-right:10px;vertical-align:middle}
+.sub{margin-top:8px;color:var(--muted)}
+.total{text-align:right}
+.total .big{font-family:var(--f-display);font-size:clamp(28px,4.5vw,40px);line-height:1}
+.total .small{font-size:13px;color:var(--muted);margin-top:4px}
+@media (max-width:640px){header.top{grid-template-columns:1fr}.total{text-align:left}}
+
+.controls{display:flex;flex-wrap:wrap;gap:10px 18px;margin-top:18px;padding:12px 14px;background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);align-items:center}
+.ctl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+.ctl input{width:78px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font-family:var(--f-mono)}
+.ctl select{padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);margin-top:18px;border-bottom:1px solid var(--line);display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+nav.tabs a{padding:12px 14px;text-decoration:none;color:var(--muted);font-weight:500;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px}
+nav.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--cobalt)}
+nav.tabs a:hover{color:var(--ink)}
+section.view{padding-top:26px}
+
+/* route */
+.route-grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:22px}
+@media (max-width:860px){.route-grid{grid-template-columns:1fr}}
+.mapbox{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:10px}
+.mapbox svg{width:100%;height:auto;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);padding:6px 6px 2px}
+.legend i{display:inline-block;width:22px;height:0;border-top:2.5px solid;vertical-align:middle;margin-right:6px}
+.city-list{display:flex;flex-direction:column;gap:10px}
+.city{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:start;padding:12px 14px;border:1px solid var(--line);background:var(--sheet);border-radius:var(--r);cursor:pointer;text-align:left;width:100%}
+.city:hover,.city.on{border-color:var(--cobalt)}
+.city .dot{width:12px;height:12px;border-radius:50%;margin-top:6px}
+.city .nights{font-family:var(--f-mono);font-size:13px;color:var(--muted);white-space:nowrap}
+.city p{font-size:13.5px;color:var(--muted);margin-top:2px}
+.leg-strip{margin-top:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.leg{padding:12px 14px;border-radius:var(--r);background:var(--sheet);border:1px solid var(--line);font-size:13.5px}
+.leg b{font-weight:600}
+
+/* days */
+.timeline{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x proximity}
+.dchip{flex:0 0 auto;scroll-snap-align:start;min-width:74px;padding:8px 10px;border:1px solid var(--line);background:var(--sheet);border-radius:8px;cursor:pointer;text-align:left}
+.dchip .d{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.dchip .c{font-size:13px;font-weight:600;margin-top:2px;white-space:nowrap}
+.dchip .bar{height:3px;border-radius:2px;margin-top:6px}
+.dchip.on{border-color:var(--cobalt);box-shadow:0 0 0 1px var(--cobalt) inset}
+.day{margin-top:18px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:22px}
+@media (max-width:860px){.day{grid-template-columns:1fr}}
+.dayhead{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
+.dayhead .when{font-family:var(--f-mono);color:var(--muted);font-size:13px}
+.dayintro{margin-top:8px;max-width:65ch;color:var(--muted)}
+.transport{margin-top:16px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-radius:var(--r);border:1px solid var(--line);background:var(--sheet)}
+.mode{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:3px 8px;border-radius:99px}
+.m-flight{background:var(--cobalt-soft);color:var(--cobalt)}
+.m-rail{background:var(--jade-soft);color:var(--jade)}
+.m-road{background:var(--paper);color:var(--road);border:1px solid var(--line)}
+.m-none{background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+.items{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.item{display:grid;grid-template-columns:auto 1fr auto;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--sheet);align-items:start}
+.item.off{opacity:.55}
+.item.off .iname{text-decoration:line-through}
+.item input[type=checkbox]{width:18px;height:18px;margin-top:3px;accent-color:var(--cobalt)}
+.iname{font-weight:600}
+.idesc{font-size:13.5px;color:var(--muted);margin-top:3px;max-width:62ch}
+.itip{font-size:12.5px;margin-top:6px;color:var(--amber)}
+.kind{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;margin-right:8px}
+.k-see{color:var(--cobalt)} .k-do{color:var(--jade)} .k-eat{color:var(--cinnabar)}
+.cost{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.cost input{width:76px;text-align:right;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font-family:var(--f-mono);font-size:13px}
+.cost .eur{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.del{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;padding:0;text-decoration:underline}
+.del:hover{color:var(--cinnabar)}
+.side{display:flex;flex-direction:column;gap:12px}
+.panel{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.panel h3{margin-bottom:8px}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 12px;font-size:13.5px}
+.kv .v{font-family:var(--f-mono);text-align:right}
+.kv .sum{border-top:1px solid var(--line);padding-top:6px;font-weight:600}
+.addform{display:grid;gap:8px}
+.addform input,.addform select,.addform textarea{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border-radius:8px;border:1px solid var(--cobalt);background:var(--cobalt);color:var(--sheet);font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--cobalt)}
+.btn.warn{border-color:var(--cinnabar);color:var(--cinnabar);background:transparent}
+.navbtns{display:flex;justify-content:space-between;margin-top:16px;gap:8px}
+
+/* budget */
+.bgrid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:22px}
+@media (max-width:860px){.bgrid{grid-template-columns:1fr}}
+.bars{display:flex;flex-direction:column;gap:12px}
+.brow{display:grid;grid-template-columns:150px 1fr 90px;gap:12px;align-items:center;font-size:14px}
+@media (max-width:520px){.brow{grid-template-columns:1fr 80px}.brow .track{grid-column:1/-1;order:3}}
+.track{height:12px;border-radius:6px;background:var(--paper);border:1px solid var(--line);overflow:hidden}
+.fill{height:100%;border-radius:6px;transition:width .35s ease}
+.brow .v{font-family:var(--f-mono);text-align:right}
+.tbl-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+td input{width:72px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font-family:var(--f-mono);text-align:right}
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:18px}
+.stat{padding:12px 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--sheet)}
+.stat .v{font-family:var(--f-display);font-size:24px;margin-top:2px}
+.note{font-size:13px;color:var(--muted);margin-top:10px;max-width:70ch}
+
+/* essentials */
+.ess{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.card{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.card h3{margin-bottom:8px}
+.card ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px}
+.card.alert{border-color:var(--cinnabar);background:var(--cinnabar-soft)}
+.card.alert h3{color:var(--cinnabar)}
+.book{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.book .w{font-family:var(--f-mono);font-size:12.5px;color:var(--cobalt);white-space:nowrap}
+.src{font-size:12.5px;color:var(--muted);margin-top:16px}
+.src a{color:var(--cobalt)}
+
+/* weather */
+.wx-strip{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;padding:10px 14px;border-radius:var(--r);background:var(--cobalt-soft);font-size:13.5px}
+.wx-strip b{font-family:var(--f-mono);font-weight:500}
+.wx-strip .t{color:var(--muted);flex-basis:100%}
+.chart{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:14px;overflow-x:auto}
+.chart svg{width:100%;min-width:480px;height:auto;display:block}
+.wxcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-top:22px}
+.wxc{background:var(--sheet);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px}
+.wxc .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.wxc .dates{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.wxnums{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.wxnums div{background:var(--paper);border-radius:8px;padding:8px}
+.wxnums .v{font-family:var(--f-mono);font-size:16px}
+.wxnums .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.wxc p{font-size:14px}
+.wxc .lab{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;display:block}
+/* hotels */
+.hbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;justify-content:space-between}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:var(--sheet);cursor:pointer;font-size:13.5px}
+.chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.staynav{display:flex;gap:8px;overflow-x:auto;margin-top:14px;padding-bottom:6px}
+.staynav a{flex:0 0 auto;display:grid;grid-template-columns:auto 1fr auto;gap:2px 8px;align-items:center;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--sheet);text-decoration:none;color:var(--ink);font-size:13px;max-width:220px}
+.staynav a i{width:8px;height:8px;border-radius:50%}
+.staynav a span{color:var(--muted);font-size:12px}
+.staynav a b{grid-column:1/-1;font-weight:500;color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stay{margin-top:34px;scroll-margin-top:60px}
+.stayhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.staydates{color:var(--muted);font-size:13px;margin-top:4px}
+.stepper{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:99px;padding:3px;background:var(--sheet)}
+.stepper button{width:30px;height:30px;border-radius:50%;border:none;background:var(--paper);cursor:pointer;font-size:17px;line-height:1}
+.stepper button:hover{background:var(--cobalt-soft);color:var(--cobalt)}
+.stepper .num{font-size:16px;min-width:1.2em;text-align:center}
+.stepper .muted{font-size:13px;margin-right:4px}
+.arrlv{display:flex;flex-wrap:wrap;gap:4px 22px;font-size:13.5px;color:var(--muted);margin-top:10px}
+.arrlv b{color:var(--ink);font-weight:600;margin-right:4px}
+.hgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;margin-top:14px}
+.hcard{position:relative;background:var(--sheet);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:border-color .2s,box-shadow .2s,transform .2s}
+.hcard:hover{transform:translateY(-2px);box-shadow:0 8px 20px -14px var(--ink)}
+.hcard.on{border-color:var(--c);box-shadow:0 0 0 2px var(--c) inset}
+.hhead{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start}
+.hhead h3{margin-top:4px}
+.harea{font-size:13px;color:var(--muted);margin-top:2px}
+.htype{display:inline-block;font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:600;padding:2px 8px;border-radius:99px}
+.t-family{background:var(--jade-soft);color:var(--jade)}
+.t-apartment{background:var(--cobalt-soft);color:var(--cobalt)}
+.t-rooms{background:var(--amber-soft);color:var(--amber)}
+.t-custom{background:var(--paper);color:var(--muted);border:1px solid var(--line)}
+.hscore{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.hscore .num{display:inline-grid;place-items:center;min-width:46px;height:38px;padding:0 8px;border-radius:10px 10px 10px 2px;background:var(--t);color:var(--sheet);font-size:17px;font-weight:500}
+.hscore small{font-size:11px;color:var(--muted);white-space:nowrap}
+.halt{font-size:12px;color:var(--muted);margin-top:-6px}
+.hroom{font-size:13.5px;background:var(--paper);border-radius:8px;padding:10px}
+.hroom .lab,.hacc dt{font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.hroom .lab{display:block;margin-bottom:2px}
+.hroom .units{display:block;font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-top:4px}
+.hacc{display:grid;grid-template-columns:auto 1fr;gap:5px 10px;margin:0;font-size:13px}
+.hacc dt{padding-top:2px}
+.hacc dd{margin:0}
+.hwhy{font-size:13.5px;color:var(--muted)}
+.hfoot{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-top:auto;border-top:1px solid var(--line);padding-top:10px}
+.hprice{display:flex;flex-direction:column;gap:4px}
+.hprice input{width:96px;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);font-family:var(--f-mono)}
+.htot{font-size:18px;text-align:right}
+.htot small{display:block;font-size:11px;color:var(--muted);font-family:var(--f-body)}
+.hactions{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+.pill-on{display:inline-flex;align-items:center;padding:7px 12px;border-radius:8px;background:var(--c);color:var(--sheet);font-weight:600;font-size:14px}
+.hlink{font-size:13px;color:var(--cobalt)}
+.hadd{margin-top:12px;font-size:14px}
+.hadd summary{cursor:pointer;color:var(--cobalt);font-weight:500}
+.hadd form{margin-top:10px;max-width:560px}
+.tonight{margin-top:12px;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 14px;border-radius:var(--r);border:1px solid var(--line);background:var(--sheet)}
+.tonight .moon{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;padding:3px 8px;border-radius:99px;background:var(--cinnabar-soft);color:var(--cinnabar)}
+.tonight a{font-size:13px;color:var(--cobalt);white-space:nowrap}
+/* customise */
+textarea.json{width:100%;min-height:200px;font-family:var(--f-mono);font-size:12px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--paper)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:9px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+.toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Family journey · 4 travellers · Amsterdam ⇄ China</div>
+      <h1 style="margin-top:8px"><span class="seal" aria-hidden="true">旅</span>Three weeks across China</h1>
+      <p class="sub" id="datesLine"></p>
+    </div>
+    <div class="total">
+      <div class="eyebrow">Estimated total</div>
+      <div class="big num" id="grandTotal">€0</div>
+      <div class="small" id="grandPP"></div>
+    </div>
+  </header>
+
+  <div class="controls" role="group" aria-label="Trip settings">
+    <label class="ctl" for="cTravellers">Travellers <input id="cTravellers" type="number" min="1" max="12"></label>
+    <label class="ctl" for="cRate">€1 = ¥ <input id="cRate" type="number" step="0.01" min="1"></label>
+    <label class="ctl" for="cFlight">Return flight per person € <input id="cFlight" type="number" step="10" min="0"></label>
+    <label class="ctl" for="cCur">Show <select id="cCur"><option value="EUR">EUR</option><option value="CNY">CNY</option></select></label>
+  </div>
+
+  <nav class="tabs" aria-label="Sections">
+    <a href="#route" data-v="route">Route</a>
+    <a href="#weather" data-v="weather">Weather</a>
+    <a href="#days" data-v="days">Day by day</a>
+    <a href="#hotels" data-v="hotels">Hotels</a>
+    <a href="#budget" data-v="budget">Budget</a>
+    <a href="#essentials" data-v="essentials">Before you go</a>
+    <a href="#customise" data-v="customise">Customise</a>
+  </nav>
+
+  <section class="view" id="v-route"></section>
+  <section class="view" id="v-weather" hidden></section>
+  <section class="view" id="v-days" hidden></section>
+  <section class="view" id="v-hotels" hidden></section>
+  <section class="view" id="v-budget" hidden></section>
+  <section class="view" id="v-essentials" hidden></section>
+  <section class="view" id="v-customise" hidden></section>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const KEY='china-family-2027-v3';
+const STAYS=[
+ {id:'bj',city:'beijing',name:'Beijing',nights:4,arrive:'Capital Airport (PEK) via the Airport Express',leave:'Beijing West station for the Xi’an train',sel:'bj1',opts:[
+  {id:'bj1',name:'base-Wangfujing Serviced Apartment',area:'Dongcheng, a quiet hutong near Wangfujing',score:9.4,src:'Trip.com',reviews:1045,alt:'9.0 on Booking.com',room:'One-bedroom family apartment, 66 m²: queen bed in the bedroom, double bed in the living room',units:'1 apartment',type:'apartment',price:190,
+   access:[['Metro','Dongsi (Lines 5 and 6), 8 min walk'],['Airport','Capital Airport, about 32 min by car'],['Station','Beijing West, about 35 min by metro or taxi']],
+   why:'Washing machine and dryer in the unit, useful at the start of a three-week trip. Guests praise the staff and the location.',url:'https://uk.trip.com/hotels/beijing-hotel-detail-106558763/base-longfusi-serviced-apartment/'},
+  {id:'bj2',name:'Happy Dragon Imperial Garden Courtyard',area:'Dongcheng, a short walk from the Forbidden City',score:9.6,src:'Booking.com',reviews:null,room:'Family room in a traditional courtyard hotel',units:'1 family room',type:'family',price:300,
+   access:[['Sights','Forbidden City and Jingshan Park within walking distance'],['Airport','Capital Airport, about 40 min by car'],['Station','Beijing West, about 30 min by taxi']],
+   why:'Courtyard architecture and a calm setting in the old city. The most atmospheric choice, and the most expensive.',url:'https://www.booking.com/family/city/cn/beijing.html'},
+  {id:'bj3',name:'UrCove by Hyatt Beijing Forbidden City',area:'Between Tiananmen Square and Wangfujing',score:9.0,src:'Trip.com',reviews:4358,room:'Two standard rooms',units:'2 rooms',type:'rooms',price:200,
+   access:[['Metro','Wangfujing area, Line 1'],['Airport','Capital Airport, about 40 min by car'],['Station','Beijing West, about 25 min by metro']],
+   why:'Modern Hyatt-brand hotel with a strong location for the Forbidden City day. Two rooms give each pair its own bathroom.',url:'https://us.trip.com/hotels/family-friendly/city/cn/beijing.html'}]},
+ {id:'xa',city:'xian',name:"Xi'an",nights:2,arrive:'Xi’an North station (Metro Line 2 runs direct to the Bell Tower)',leave:'Xi’an North station for the Chengdu train',sel:'xa1',opts:[
+  {id:'xa1',name:'Center Hotel Xi’an Bell Tower',area:'East Street, next to the Bell Tower',score:9.5,src:'Trip.com',reviews:6236,alt:'9.0 on Booking.com',room:'Elegance Luxury Twin room with two double beds',units:'1 room',type:'family',price:110,
+   access:[['Metro','Zhonglou (Lines 2 and 6) at the door'],['Station','Xi’an North, about 30 min on Line 2, no change'],['Sights','Muslim Quarter and City Wall on foot']],
+   why:'The easiest arrival on the trip: one metro line from the train to the hotel door. Very high scores for service and cleanliness.',url:'https://us.trip.com/hotels/xi-an-hotel-detail-36148464/sende-hotel/'},
+  {id:'xa2',name:'Yunheyebo Hotel South Gate',area:'Beilin, near the South Gate (Yongningmen)',score:9.5,src:'Booking.com',reviews:311,room:'Family room',units:'1 family room',type:'family',price:110,
+   access:[['Metro','Yongningmen (Line 2), short walk'],['Station','Xi’an North, about 30 min on Line 2, no change'],['Sights','City Wall bike hire at the South Gate']],
+   why:'Best placed for the City Wall bike ride, which starts at the South Gate.',url:'https://www.booking.com/family/city/cn/xi-an.html?aid=311861'},
+  {id:'xa3',name:'HÉONIC Art Residence & Suites',area:'Zhuque Street, just south of the wall',score:8.8,src:'Booking.com',reviews:834,room:'Signature family suite',units:'1 suite',type:'apartment',price:130,
+   access:[['Metro','Line 2 nearby'],['Station','Xi’an North, about 35 min by metro'],['Sights','Big Wild Goose Pagoda about 10 min by taxi']],
+   why:'More space than a hotel room, with a separate living area. Slightly lower score than the other two.',url:'https://www.booking.com/family/city/cn/xi-an.html?aid=311861'}]},
+ {id:'cd',city:'chengdu',name:'Chengdu',nights:3,arrive:'Chengdu East station (Metro Line 2 to the centre)',leave:'Shuangliu or Tianfu airport for Zhangjiajie',sel:'cd1',opts:[
+  {id:'cd1',name:'Grand ParcVue Hotel Residence',area:'Jinjiang, between Tianfu Square and Chunxi Road',score:9.6,src:'Trip.com',reviews:2157,alt:'9.4 on Booking.com',room:'Two-bedroom suite, 115 m²: king bed plus two singles, kitchenette, washer and dryer',units:'1 apartment',type:'apartment',price:220,
+   access:[['Metro','Jinjiang Hotel (Line 1), 400 m'],['Station','Chengdu East, about 30 min by metro'],['Airport','Shuangliu about 30 min by car; Tianfu about 1 hour']],
+   why:'A real two-bedroom apartment, so everyone has a door to close. A Booking.com guest describes it as ideal for a family of four.',url:'https://us.trip.com/hotels/chengdu-hotel-detail-426534/grand-parcvue-hotel-residence-chengdu/'},
+  {id:'cd2',name:'Mercure Chengdu Chunxi Taikoo Li',area:'Jinjiang, Chunxi Road and Taikoo Li',score:9.2,src:'Booking.com',reviews:null,room:'Two standard rooms',units:'2 rooms',type:'rooms',price:160,
+   access:[['Metro','Chunxi Road (Lines 2 and 3)'],['Station','Chengdu East, about 25 min on Line 2, no change'],['Sights','Line 3 runs north to the Panda Base']],
+   why:'Direct metro from the arrival station and to the pandas. Restaurants and shopping on the doorstep.',url:'https://www.booking.com/family/city/cn/chengdu.html'},
+  {id:'cd3',name:'Xishu Garden Inn',area:'Qingyang, near Kuanzhai Alley',score:9.7,src:'Booking.com',reviews:null,room:'Panda-themed family rooms; for four adults book two',units:'2 rooms',type:'rooms',price:130,
+   access:[['Metro','Kuanzhai Alley area, Lines 2 and 4'],['Station','Chengdu East, about 35 min by metro'],['Sights','Kuanzhai Alley and People’s Park on foot']],
+   why:'Small, characterful and the highest score in Chengdu. Family rooms are sized for a family with one child, so plan on two.',url:'https://www.booking.com/family/city/cn/chengdu.html'}]},
+ {id:'wl',city:'zhangjiajie',name:'Wulingyuan',nights:4,arrive:'Car from Zhangjiajie airport, about 40 min',leave:'Car to Zhangjiajie city for Tianmen Mountain',sel:'wl1',opts:[
+  {id:'wl1',name:'Hilton Garden Inn Zhangjiajie Wulingyuan',area:'Wulingyuan town',score:9.2,src:'Booking.com',reviews:463,alt:'Ranked #10 of 250 in Zhangjiajie on Tripadvisor',room:'Family room',units:'1 family room',type:'family',price:120,
+   access:[['Park','Wulingyuan gate about 3 km, short taxi ride'],['Airport','Zhangjiajie airport, about 40 min'],['Town','Restaurants and shops in Wulingyuan']],
+   why:'International standards and family rooms listed. China Highlights names it a good base for families.',url:'https://www.tripadvisor.com/Hotel_Review-g494933-d33325639-Reviews-Hilton_Garden_Inn_Zhangjiajie_Wulingyuan-Zhangjiajie_Hunan.html'},
+  {id:'wl2',name:'Zhangjiajie Yu Realm Hotel',area:'Wulingyuan, near the park',score:9.6,src:'Booking.com',reviews:407,room:'Two rooms',units:'2 rooms',type:'rooms',price:150,
+   access:[['Park','Close to the Wulingyuan gate'],['Airport','Zhangjiajie airport, about 40 min'],['Town','Wulingyuan town centre nearby']],
+   why:'The highest-scored hotel near the park with a large number of reviews.',url:'https://www.booking.com/city/cn/wulingyuan.html'},
+  {id:'wl3',name:'Zhangjiajie Borrman Hotel',area:'Wulingyuan, beside the gate',score:9.0,src:'Booking.com',reviews:194,room:'Two rooms',units:'2 rooms',type:'rooms',price:110,
+   access:[['Park','Wulingyuan (East) gate, 300 m on foot'],['Airport','Zhangjiajie airport, about 40 min'],['Town','Wulingyuan town on foot']],
+   why:'Walk to the park gate for the 7:00 opening, with no taxi needed on any of the four park days.',url:'https://www.booking.com/city/cn/wulingyuan.html'},
+  {id:'wl4',name:'Mountain View Guesthouse',area:'Wulingyuan',score:9.2,src:'Booking.com',reviews:298,room:'Family room',units:'1 family room',type:'family',price:50,
+   access:[['Park','Near the Wulingyuan gate'],['Airport','Zhangjiajie airport, about 40 min'],['Style','Family-run guesthouse']],
+   why:'The budget option. Simple rooms and helpful owners, often able to arrange cars and tickets.',url:'https://www.booking.com/city/cn/wulingyuan.html'}]},
+ {id:'zc',city:'zhangjiajie',name:'Zhangjiajie city',nights:1,arrive:'Car from Wulingyuan, about 50 min',leave:'Zhangjiajie West station, 7:10 train to Guilin (about 15 min by taxi)',sel:'zc1',opts:[
+  {id:'zc1',name:'Home2 Suites by Hilton Tianmen Mountain',area:'City centre, by the Tianmen cableway station',score:9.5,src:'Trip.com',reviews:3114,room:'Three-bed room, 40 m²: two double beds and a sofa bed',units:'1 room',type:'family',price:90,
+   access:[['Tianmen','Cableway station and shuttle, 600 m'],['Station','Zhangjiajie West, about 15 min by taxi'],['Airport','Zhangjiajie airport, 4.6 km']],
+   why:'A room that genuinely sleeps four, a short walk from the Tianmen shuttle. Ask for an early breakfast box for the 7:10 train.',url:'https://us.trip.com/hotels/zhangjiajie-hotel-detail-124121894/home2-suites-by-hilton-zhangjiajie-tianmen-mountain/'},
+  {id:'zc2',name:'Wyndham Garden Tianmen Mountain',area:'City centre, by the Tianmen cableway station',score:9.6,src:'Trip.com',reviews:6212,room:'Superior room with two double beds',units:'1 room',type:'family',price:95,
+   access:[['Tianmen','Cableway station and shuttle, 700 m'],['Station','Zhangjiajie West, about 15 min by taxi'],['Airport','Zhangjiajie airport, about 12 min']],
+   why:'Excellent score from over 6,000 reviews. Two double beds in one room.',url:'https://ca.trip.com/hotels/zhangjiajie-hotel-detail-123308210/wyndham-garden-zhangjiajie-tianmen-mountain/'}]},
+ {id:'gl',city:'guilin',name:'Guilin',nights:1,arrive:'Guilin station by train from Zhangjiajie',leave:'Li River cruise pier (hotel pick-up with most cruise tickets)',sel:'gl1',opts:[
+  {id:'gl1',name:'Elephant Trunk Hill Hotel',area:'Xiangshan, with its own entrance to Elephant Trunk Hill Park',score:9.6,src:'Trip.com',reviews:3074,room:'Two rooms (a triple room plus a twin)',units:'2 rooms',type:'rooms',price:120,
+   access:[['Station','Guilin station, 1.7 km'],['Sights','Elephant Trunk Hill park entrance in the hotel'],['Airport','Guilin airport, about 50 min']],
+   why:'Arrive from the train, walk straight into Guilin’s best-known sight. Very high scores for location and cleanliness.',url:'https://www.trip.com/hotels/guilin-hotel-detail-1195114/elephant-trunk-hill-hotel/'},
+  {id:'gl2',name:'Shangri-La Guilin',area:'Qixing, on the Li River bank',score:9.3,src:'Trip.com',reviews:4142,room:'Two interconnecting deluxe rooms, 84 m²',units:'2 rooms',type:'rooms',price:240,
+   access:[['Station','Guilin North, about 5 km; Guilin station about 15 min by taxi'],['Sights','River views and gardens'],['Airport','Guilin airport, about 1 hour']],
+   why:'Riverside resort feel and connecting rooms. Some guests mention dated facilities.',url:'https://ca.trip.com/hotels/guilin-hotel-detail-397571/shangri-la-hotel-guilin/'}]},
+ {id:'ys',city:'guilin',name:'Yangshuo',nights:2,arrive:'Yangshuo pier at the end of the Li River cruise',leave:'Car to Guilin airport, about 1h15',sel:'ys1',opts:[
+  {id:'ys1',name:'Yangshuo Lakeside Inn',area:'Yulong River countryside',score:9.7,src:'Booking.com',reviews:151,room:'Family room',units:'1 family room',type:'family',price:90,
+   access:[['Town','West Street, about 15 min by car'],['Sights','Yulong River rafting and cycling routes nearby'],['Airport','Guilin airport, about 1h15']],
+   why:'Quiet rice-field setting right on the cycling and rafting routes of day 18.',url:'https://www.booking.com/family/city/cn/yangshuo.html?aid=804912'},
+  {id:'ys2',name:'The Dragons Rest Sanctuary',area:'Yulong River Scenic Area',score:9.6,src:'Booking.com',reviews:135,room:'Family room with private bathroom',units:'1 family room',type:'family',price:180,
+   access:[['Town','West Street, about 20 min by car'],['Sights','On the Yulong River'],['Airport','Guilin airport, about 1h15']],
+   why:'The splurge in Yangshuo: views of the karst peaks from the room.',url:'https://www.booking.com/family/city/cn/yangshuo.html?aid=804912'},
+  {id:'ys3',name:'IM Waiting Hotel',area:'Yangshuo town, near West Street',score:9.6,src:'Booking.com',reviews:115,room:'Family room',units:'1 family room',type:'family',price:75,
+   access:[['Pier','Walk from the cruise landing'],['Town','West Street on foot'],['Airport','Guilin airport, about 1h10']],
+   why:'Easiest arrival after the cruise and lively evenings, at the cost of a short taxi to the countryside.',url:'https://www.booking.com/family/city/cn/yangshuo.html?aid=804912'},
+  {id:'ys4',name:'Yangshuo Li River Resort',area:'Shuangtan Village, by the Li River',score:9.6,src:'Booking.com',reviews:902,room:'Rooms guests describe as great for families',units:'1–2 rooms',type:'rooms',price:140,
+   access:[['Town','West Street, about 10 min by car'],['Sights','Li River frontage'],['Airport','Guilin airport, about 1h15']],
+   why:'The most-reviewed top scorer in Yangshuo, with river views.',url:'https://www.booking.com/family/city/cn/yangshuo.html?aid=804912'}]},
+ {id:'sh',city:'shanghai',name:'Shanghai',nights:3,arrive:'Pudong (PVG) or Hongqiao airport from Guilin',leave:'Pudong airport (PVG) for Amsterdam',sel:'sh1',opts:[
+  {id:'sh1',name:'Shanghai Centre Serviced Apartment',area:'Jing’an, West Nanjing Road',score:9.0,src:'Booking.com',reviews:null,room:'Serviced apartment; ask for a two-bedroom unit',units:'1 apartment',type:'apartment',price:260,
+   access:[['Metro','Jing’an Temple (Lines 2, 7, 14)'],['Airport','Pudong on Line 2, or 8 min Maglev from Longyang Road'],['Sights','The Bund about 15 min by metro']],
+   why:'Space to spread out at the end of the trip. Line 2 runs straight to Pudong airport for the flight home.',url:'https://www.booking.com/family/city/cn/shanghai.html?aid=330996'},
+  {id:'sh2',name:'SSAW Boutique Hotel Shanghai Bund',area:'Huangpu, behind the Bund',score:8.6,src:'Booking.com',reviews:null,room:'Family room, described by a guest as large and comfortable for a family of four',units:'1 family room',type:'family',price:200,
+   access:[['Sights','The Bund and Nanjing Road on foot'],['Metro','East Nanjing Road (Lines 2 and 10)'],['Airport','Pudong, about 50 min by car']],
+   why:'Stay where the evening views are. A good score, though the lowest on this list.',url:'https://www.booking.com/family/city/cn/shanghai.html?aid=330996'},
+  {id:'sh3',name:'Holiday Inn Shanghai Jing’an',area:'Jing’an, Zhongxing Road',score:9.3,src:'Booking.com',reviews:null,room:'Two standard rooms',units:'2 rooms',type:'rooms',price:200,
+   access:[['Metro','Line 1, nearby'],['Airport','Pudong, about 50 min by car'],['Station','Shanghai station close by']],
+   why:'Reliable, well scored and good value for central Shanghai in July.',url:'https://www.booking.com/family/city/cn/shanghai.html?aid=330996'}]}
+];
+
+const CITY_COLORS={beijing:'var(--cinnabar)',xian:'var(--amber)',chengdu:'var(--plum)',zhangjiajie:'var(--jade)',guilin:'var(--teal)',shanghai:'var(--cobalt)',air:'var(--muted)'};
+
+const DEFAULT={
+ stays:STAYS,
+ settings:{travellers:4,rate:7.5,flightPP:1150,foodPP:40,localCNY:4500,extrasPP:70,contingency:10,currency:'EUR',start:'2027-07-10'},
+ cities:[
+  {id:'beijing',name:'Beijing',zh:'北京',lat:39.90,lon:116.40,nights:4,hotel:120,area:'Dongcheng, near Wangfujing or the Shichahai hutongs',blurb:'Imperial capital: Forbidden City, Temple of Heaven, Summer Palace and the Great Wall at Mutianyu.',
+   w:{hi:31,lo:22,rain:160,days:14,hum:75,feel:'Hot and humid with short afternoon thunderstorms. July is Beijing’s most humid month.',best:'Sightsee from 7:00 to 12:00, rest indoors from 13:00 to 16:00, go out again after sunset.',wear:'Light breathable clothes, sun hat, compact umbrella, mosquito repellent for the lakes at dusk.'}},
+  {id:'xian',name:"Xi'an",zh:'西安',lat:34.34,lon:108.94,nights:2,hotel:80,area:'Inside the City Wall, close to the Bell Tower',blurb:'Start of the Silk Road. Terracotta Army, a 14 km Ming city wall and the Muslim Quarter food streets.',
+   w:{hi:32,lo:22,rain:99,days:10,hum:71,feel:'The driest stop of the trip, with strong sun and dry heat. Rain comes in short bursts.',best:'Terracotta Army at opening, City Wall after 17:00, museum at midday.',wear:'Sunscreen and sunglasses, a light long-sleeved layer for air-conditioned trains and museums.'}},
+  {id:'chengdu',name:'Chengdu',zh:'成都',lat:30.66,lon:104.07,nights:3,hotel:85,area:'Jinjiang district, near Chunxi Road or Taikoo Li',blurb:'Sichuan capital: giant pandas, teahouse culture, hotpot and a day trip to the Leshan Giant Buddha.',
+   w:{hi:30,lo:22,rain:225,days:18,hum:80,feel:'The mildest temperatures on the route, but often overcast and muggy, with frequent rain.',best:'Panda Base between 7:30 and 9:30; pandas sleep once the heat builds.',wear:'Rain jacket, quick-dry clothes, light trousers against mosquitoes.'}},
+  {id:'zhangjiajie',name:'Zhangjiajie',zh:'张家界',lat:29.12,lon:110.48,nights:5,hotel:70,area:'4 nights in Wulingyuan (park gate), 1 night in Zhangjiajie city',blurb:'Sandstone pillars of the Wulingyuan UNESCO area, the Grand Canyon Glass Bridge and Tianmen Mountain.',
+   w:{hi:33,lo:24,rain:233,days:23,hum:78,feel:'The wettest month of the year. The park plateaus run 5 to 10 °C cooler than the town, and mist is common.',best:'Mountain areas during the day, town and lower sights in the evening. Keep a spare day for rain.',wear:'Rain jacket, shoes with good grip, a change of clothes, waterproof bag for phones.'}},
+  {id:'guilin',name:'Guilin & Yangshuo',zh:'桂林 · 阳朔',lat:24.95,lon:110.35,nights:3,hotel:75,area:'1 night in Guilin, 2 nights in Yangshuo near the Yulong River',blurb:'Karst peaks along the Li River, bamboo rafting on the Yulong River and cycling through rice fields.',
+   w:{hi:33,lo:25,rain:231,days:16,hum:79,feel:'Hot, humid and very sunny between showers, with a UV index up to 11. Heavy rain can shorten Li River cruises.',best:'Rafting and cycling before 10:00 or after 15:00; caves stay near 20 °C.',wear:'Sandals for rafting, high-SPF sunscreen, sun hat, quick-dry shirts.'}},
+  {id:'shanghai',name:'Shanghai',zh:'上海',lat:31.23,lon:121.47,nights:3,hotel:140,area:"Jing'an or near the Bund (Huangpu)",blurb:'The Bund, Lujiazui skyline, Yu Garden, the French Concession and a canal town day trip.',
+   w:{hi:32,lo:25,rain:135,days:12,hum:76,feel:'Hot and sticky. The plum-rain season ends around 10 July; late July can bring a typhoon, usually for one or two days.',best:'Yu Garden at opening, indoor museums at midday, the Bund and river after dark.',wear:'Light clothing plus a thin layer for cold metro cars and malls. Umbrella.'}}
+ ],
+ days:[
+  {city:'air',title:'Amsterdam to Beijing',intro:'Overnight direct flight. KLM flies Schiphol to Beijing Capital (PEK); China Southern flies to Beijing Daxing (PKX). Both take about 10 hours.',
+   t:{mode:'flight',label:'AMS → PEK, direct',detail:'Covered by the international flight budget',cny:0},
+   items:[{k:'do',n:'Final checks',d:'Passports (6+ months valid), Alipay and WeChat Pay set up with a bank card, eSIM installed, all bookings saved offline.',c:0}]},
+  {city:'beijing',title:'Arrival and the old hutongs',intro:'A gentle first day to absorb the jet lag. Beijing is 6 hours ahead of Amsterdam in summer.',
+   t:{mode:'rail',label:'Airport Express to Dongzhimen',detail:'About 20 minutes from PEK; metro or DiDi to the hotel',cny:25},
+   items:[
+    {k:'do',n:'Shichahai and Houhai lakes',d:'Walk the lakeside lanes, then cut through Nanluoguxiang and the quieter hutongs around it.',c:0},
+    {k:'see',n:'Drum and Bell Towers',d:'Two Ming-era towers facing each other; drum performances run several times a day.',c:30},
+    {k:'eat',n:'Peking duck dinner',d:'Siji Minfu or Da Dong are reliable choices. Book a table for four.',c:200,tip:'Cost shown is on top of the daily food allowance.'}]},
+  {city:'beijing',title:'Temple of Heaven and Summer Palace',intro:'The Forbidden City is closed on Mondays, so this day goes to the two great imperial parks.',
+   t:{mode:'road',label:'Metro and DiDi',detail:'Part of the local transport allowance',cny:0},
+   items:[
+    {k:'see',n:'Temple of Heaven',d:'Arrive by 8:00 to see locals doing tai chi, dancing and playing cards before the Hall of Prayer for Good Harvests.',c:34,tip:'Buy the through ticket; the basic one excludes the main halls.'},
+    {k:'see',n:'Summer Palace',d:'Kunming Lake, the Long Corridor and Longevity Hill. Plan 3 to 4 hours.',c:60},
+    {k:'do',n:'Dragon boat across Kunming Lake',d:'Short crossing that saves the walk back along the shore.',c:20},
+    {k:'do',n:'Qianmen Street in the evening',d:'Restored shopping street south of Tiananmen with old Beijing snack shops.',c:0}]},
+  {city:'beijing',title:'Tiananmen and the Forbidden City',intro:'The busiest sightseeing day of the trip. Both sites need advance, passport-linked reservations.',
+   t:{mode:'road',label:'Metro Line 1',detail:'Tiananmen East station',cny:0},
+   items:[
+    {k:'see',n:'Tiananmen Square',d:'Free, but entry requires a reservation under each passport.',c:0,tip:'Reserve on the official WeChat mini-programme a few days ahead.'},
+    {k:'see',n:'Forbidden City (Palace Museum)',d:'Enter through the Meridian Gate and exit north. Allow 4 hours.',c:60,tip:'Tickets release 7 days ahead at 20:00 Beijing time and often sell out within minutes.'},
+    {k:'see',n:'Treasure Gallery',d:'Add-on to the palace ticket; quieter eastern courtyards with imperial jewellery.',c:10},
+    {k:'see',n:'Jingshan Park',d:'Short climb straight after the exit for the classic view over the golden roofs.',c:2},
+    {k:'do',n:'Acrobatics show',d:'Chaoyang Theatre, 75 minutes, easy evening after a long day on foot.',c:280,on:false}]},
+  {city:'beijing',title:'The Great Wall at Mutianyu',intro:'Mutianyu has restored watchtowers, fewer crowds than Badaling, and a toboggan run down.',
+   t:{mode:'road',label:'Private driver, full day',detail:'About 1.5 hours each way; around ¥900 for the car, shared by four',cny:225},
+   items:[
+    {k:'see',n:'Mutianyu entrance and shuttle',d:'Entrance plus the shuttle bus from the visitor centre.',c:60},
+    {k:'do',n:'Cable car up, toboggan down',d:'The toboggan is the family favourite. Walk towers 14 to 20 in between.',c:140,tip:'Start at 8:00. By 11:00 it is hot and busy in July.'},
+    {k:'do',n:'Olympic Park by night',d:'Bird’s Nest and Water Cube lit up, free to walk around.',c:0}]},
+  {city:'xian',title:"Bullet train to Xi'an and the City Wall",intro:'Beijing West to Xi’an North on a G-train, roughly 4.5 hours through the North China Plain.',
+   t:{mode:'rail',label:'G-train, second class',detail:'Beijing West → Xi’an North, about 4h20. Tickets open 15 days ahead.',cny:578},
+   items:[
+    {k:'do',n:'Cycle the City Wall',d:'The full 14 km loop on rented bikes takes about 2 hours. Go after 17:00 for cooler air and sunset.',c:99,tip:'¥54 wall entry plus about ¥45 bike hire.'},
+    {k:'eat',n:'Muslim Quarter food streets',d:'Roujiamo, biangbiang noodles and yangrou paomo. Beiyuanmen is the main lane.',c:0}]},
+  {city:'xian',title:'The Terracotta Army',intro:'An hour east of the city. Pit 1 is the famous one; leave time for the bronze chariots in the exhibition hall.',
+   t:{mode:'road',label:'DiDi or Tourist Bus 5 (306)',detail:'DiDi for four is about ¥300 return; the bus is cheaper and slower',cny:75},
+   items:[
+    {k:'see',n:'Terracotta Warriors Museum',d:'Pits 1, 2 and 3 plus the exhibition hall. Allow 3 to 4 hours.',c:120,tip:'Real-name booking up to 7 days ahead. No walk-up sales in peak season.'},
+    {k:'do',n:'Licensed guide at the site',d:'Makes the pits far more meaningful. About ¥600 for the group.',c:150,on:false},
+    {k:'see',n:'Big Wild Goose Pagoda and Datang Everbright City',d:'Tang-era pagoda, then the illuminated pedestrian avenue to the south. Free in the evening.',c:0}]},
+  {city:'chengdu',title:"Museum morning, bullet train to Chengdu",intro:'The fastest trains cover Xi’an North to Chengdu East in about 3 hours, through the Qinling mountains.',
+   t:{mode:'rail',label:'G-train, second class',detail:'Xi’an North → Chengdu East, 3 to 4 hours, about 80 trains a day',cny:280},
+   items:[
+    {k:'see',n:'Shaanxi History Museum',d:'One of China’s finest collections, from Zhou bronzes to Tang murals. Closed on Mondays.',c:0,tip:'Free, but reserve passport slots in advance.'},
+    {k:'do',n:'Kuanzhai Xiangzi in the evening',d:'The Wide and Narrow Alleys: restored Qing-era lanes with snack stalls and teahouses.',c:0},
+    {k:'eat',n:'First Sichuan hotpot',d:'Ask for a split pot (yuanyang) so the spicy and mild broths sit side by side.',c:120,tip:'Cost shown is on top of the daily food allowance.'}]},
+  {city:'chengdu',title:'Giant pandas and old Chengdu',intro:'An early start for the pandas, then a slow afternoon in the city’s temples and teahouses.',
+   t:{mode:'road',label:'Metro Line 3 or DiDi',detail:'Panda Base is about 30 minutes north of the centre',cny:0},
+   items:[
+    {k:'see',n:'Chengdu Research Base of Giant Panda Breeding',d:'Adults, cubs in the nursery and red pandas. Allow 3 hours.',c:55,tip:'Arrive at 7:30. On hot afternoons the pandas sleep indoors. Book online with each passport.'},
+    {k:'do',n:'Park sightseeing cart',d:'Saves a long uphill walk between enclosures.',c:30,on:false},
+    {k:'see',n:'Wenshu Monastery',d:'Working Buddhist monastery with a good vegetarian restaurant.',c:0},
+    {k:'do',n:'Tea in People’s Park',d:'Heming Teahouse: bamboo chairs, jasmine tea and professional ear cleaners if you are brave.',c:30}]},
+  {city:'chengdu',title:'Leshan Giant Buddha day trip',intro:'The 71-metre Buddha carved into a riverside cliff in the 8th century, about an hour away by train.',
+   t:{mode:'rail',label:'Train to Leshan and back',detail:'Chengdu East → Leshan, about 1 hour each way',cny:110},
+   items:[
+    {k:'see',n:'Leshan Giant Buddha scenic area',d:'Walk down the cliff staircase beside the statue to its feet, then back up.',c:80,tip:'The staircase queue can take 2 hours by late morning. Go early.'},
+    {k:'do',n:'Boat ride past the Buddha',d:'30-minute river cruise for the full front view. Good option if the stair queue is long.',c:70},
+    {k:'do',n:'Sichuan opera and face changing',d:'Evening show at Shufeng Yayun teahouse in Culture Park.',c:200,on:false}]},
+  {city:'zhangjiajie',title:'Flight to Zhangjiajie',intro:'A short flight from Chengdu, then a car to Wulingyuan at the gate of the Forest Park.',
+   t:{mode:'flight',label:'Chengdu → DYG, about 1h10',detail:'Then a pre-booked car to Wulingyuan, about 40 minutes',cny:750},
+   items:[
+    {k:'do',n:'Morning in Chengdu',d:'Breakfast of dan dan noodles and a last walk around Jinli or Taikoo Li before the airport.',c:0},
+    {k:'do',n:'Evening in Wulingyuan',d:'Buy park supplies and rain ponchos; early night before the park.',c:0}]},
+  {city:'zhangjiajie',title:'Avatar mountains: Yuanjiajie and Tianzi',intro:'The pass covers four consecutive days, so you can return tomorrow without paying again.',
+   t:{mode:'road',label:'Park eco-buses',detail:'Included in the Forest Park pass',cny:0},
+   items:[
+    {k:'see',n:'National Forest Park pass',d:'Four-day pass with the internal shuttle buses. Your face is registered at first entry.',c:227},
+    {k:'do',n:'Bailong Elevator up',d:'326 m glass lift up the cliff face to the Yuanjiajie plateau.',c:65,tip:'Queues build after 9:30. Enter at gate opening.'},
+    {k:'see',n:'Yuanjiajie and Hallelujah Mountain',d:'The pillar that inspired the floating mountains in Avatar, and the First Bridge Under Heaven.',c:0},
+    {k:'see',n:'Tianzi Mountain',d:'Wide panoramas over the pillar forest; He Long Park at the top.',c:0},
+    {k:'do',n:'Tianzi cableway down',d:'Six minutes back to the valley floor.',c:72}]},
+  {city:'zhangjiajie',title:'Golden Whip Stream and Huangshizhai',intro:'A valley walk among the pillars, then the plateau view many consider the best in the park.',
+   t:{mode:'road',label:'Park eco-buses',detail:'Included in the pass',cny:0},
+   items:[
+    {k:'do',n:'Golden Whip Stream walk',d:'About 7.5 km of flat path along the creek, shaded and easy. Watch for macaques.',c:0},
+    {k:'do',n:'Huangshizhai cableway',d:'Up to the Five Fingers Peak lookout loop.',c:130,tip:'Return ticket shown. Walking down saves about ¥65.'},
+    {k:'do',n:'Ten-Mile Gallery mini train',d:'Small tourist train along a gorge lined with rock formations.',c:52,on:false},
+    {k:'do',n:'Charming Xiangxi show',d:'Evening folk performance of the Tujia and Miao peoples.',c:238,on:false}]},
+  {city:'zhangjiajie',title:'Grand Canyon Glass Bridge',intro:'The 430 m glass bridge over a canyon. Your last night in Wulingyuan; the pass is still valid if a rainy day pushed a park visit back.',
+   t:{mode:'road',label:'Private car, return',detail:'Wulingyuan → Grand Canyon → Wulingyuan; around ¥500 for the car',cny:125},
+   items:[
+    {k:'see',n:'Grand Canyon and Glass Bridge (Line B)',d:'Bridge crossing, then the descent into the gorge and the boat ride on the lake.',c:178,tip:'Book 3 to 5 days ahead. Closes in storms.'},
+    {k:'do',n:'Spare park afternoon',d:'Use the fourth day of the pass for Yangjiajie or a viewpoint missed in the mist.',c:0}]},
+  {city:'zhangjiajie',title:'Tianmen Mountain',intro:'Move to Zhangjiajie city in the morning, then Tianmen Cave, the cliff walkways and the glass skywalk.',
+   t:{mode:'road',label:'Car to Zhangjiajie city',detail:'About 50 minutes; around ¥300 for the car',cny:75},
+   items:[
+    {k:'see',n:'Tianmen Mountain, Route C',d:'Cave express cableway up, then the escalator to the summit and the cliff paths.',c:288,tip:'The long main cableway was suspended on 13 October 2026. Check which routes run in July 2027.'},
+    {k:'do',n:'Summit escalator and skywalk covers',d:'Escalator inside the mountain plus shoe covers for the glass walkway.',c:37},
+    {k:'see',n:'Tianmen Cave and the 999 steps',d:'A natural arch 130 m high. Climbing the steps is optional; an escalator runs alongside.',c:0},
+    {k:'do',n:'72 Qilou at night',d:'A floodlit tower complex in Zhangjiajie city, free to walk.',c:0}]},
+  {city:'guilin',title:'Train to Guilin',intro:'The single direct train leaves Zhangjiajie West at about 7:10 and reaches Guilin early in the afternoon.',
+   t:{mode:'rail',label:'D-train, second class',detail:'Zhangjiajie West → Guilin, about 7 hours, one direct train a day',cny:345},
+   items:[
+    {k:'see',n:'Elephant Trunk Hill',d:'Guilin’s symbol: a rock arch over the river, best seen from the far bank.',c:0},
+    {k:'do',n:'Two Rivers and Four Lakes at night',d:'Evening boat past the lit Sun and Moon Pagodas.',c:150,on:false},
+    {k:'eat',n:'Guilin rice noodles',d:'The local breakfast that works at any hour; a bowl costs a few yuan.',c:0}]},
+  {city:'guilin',title:'Li River cruise to Yangshuo',intro:'Four hours downriver through the karst scenery printed on the ¥20 note, ending in Yangshuo.',
+   t:{mode:'road',label:'Shuttle to the Mopanshan pier',detail:'Usually included with the cruise ticket',cny:0},
+   items:[
+    {k:'see',n:'Li River cruise, Guilin to Yangshuo',d:'Four-star boat with lunch. Xingping and Nine Horse Fresco Hill are the highlights.',c:450,tip:'Heavy rain can shorten the route. Book through a hotel or Trip.com a few days ahead.'},
+    {k:'do',n:'West Street',d:'Yangshuo’s lively pedestrian street, busy and fun after dark.',c:0},
+    {k:'do',n:'Impression Liu Sanjie',d:'Night show on the river with the karst peaks lit as the backdrop.',c:240,on:false}]},
+  {city:'guilin',title:'Yangshuo countryside',intro:'The best day of the southern leg: bikes, a bamboo raft and the rice fields.',
+   t:{mode:'road',label:'Bicycles and local taxis',detail:'Bike hire around ¥30 a day each',cny:30},
+   items:[
+    {k:'do',n:'Yulong River bamboo raft',d:'A boatman poles you downstream over small weirs. About 1.5 hours.',c:130,tip:'Go before 10:00. Wear sandals; you will get wet.'},
+    {k:'do',n:'Cycle past Moon Hill',d:'Flat country lanes between rice fields and limestone towers.',c:15},
+    {k:'see',n:'Xianggong Hill or Ruyi Peak',d:'Short climb for the river view at sunset, or the Ruyi Peak cable car.',c:40,on:false}]},
+  {city:'shanghai',title:'Flight to Shanghai',intro:'Car from Yangshuo to Guilin Liangjiang airport, then a two-hour flight to Shanghai.',
+   t:{mode:'flight',label:'KWL → Shanghai, about 2h',detail:'Car to the airport about 1h15, around ¥400 for the group',cny:1000},
+   items:[
+    {k:'do',n:'Slow morning in Yangshuo',d:'Breakfast by the river before the transfer.',c:0},
+    {k:'see',n:'The Bund after dark',d:'First look at the Lujiazui skyline across the Huangpu.',c:0}]},
+  {city:'shanghai',title:'The Bund, Yu Garden and Lujiazui',intro:'Old Shanghai on the west bank, the skyline on the east bank.',
+   t:{mode:'road',label:'Metro',detail:'Lines 2 and 10 cover most of the day',cny:0},
+   items:[
+    {k:'see',n:'Yu Garden',d:'Ming-dynasty garden in the old city; the bazaar around it is touristy but lively.',c:40,tip:'Be there at opening, before the heat and the crowds.'},
+    {k:'eat',n:'Xiaolongbao lunch',d:'Soup dumplings near Yu Garden or a Din Tai Fung for something reliable.',c:0},
+    {k:'see',n:'Shanghai Tower observation deck',d:'The highest deck in China at 546 m. Go at sunset.',c:180},
+    {k:'do',n:'Huangpu River night cruise',d:'One-hour cruise between the Bund lights and the Lujiazui towers.',c:120}]},
+  {city:'shanghai',title:'French Concession and a canal town',intro:'Plane-tree streets in the morning, water town in the afternoon, farewell dinner.',
+   t:{mode:'road',label:'Metro and DiDi',detail:'Zhujiajiao is about an hour west by Metro Line 17',cny:20},
+   items:[
+    {k:'do',n:'Former French Concession walk',d:'Wukang Road, Anfu Road and the Tianzifang lanes. Good cafés and shops.',c:0},
+    {k:'see',n:'Shanghai Museum East',d:'The new Pudong branch; free with an online reservation.',c:0,on:false},
+    {k:'see',n:'Zhujiajiao water town',d:'Stone bridges and canals. Free to enter; pay for a boat and a few sights.',c:90},
+    {k:'eat',n:'Farewell dinner',d:'A proper sit-down meal for the last night.',c:250,tip:'Cost shown is on top of the daily food allowance.'}]},
+  {city:'air',title:'Shanghai to Amsterdam',intro:'Daytime direct flight that lands in Amsterdam the same evening.',
+   t:{mode:'flight',label:'PVG → AMS, direct',detail:'KLM or China Eastern. Maglev to Pudong airport in 8 minutes.',cny:50},
+   items:[{k:'do',n:'Last-minute shopping',d:'Tea from a proper tea shop is easy to pack and well received at home.',c:0}]}
+ ]
+};
+
+let S;
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function hydrate(d){if(!d.stays)d.stays=clone(STAYS);syncNights(d);d.days.forEach((day,i)=>{day.id=day.id||'d'+i;day.items.forEach((it,j)=>{it.id=it.id||('i'+i+'_'+j);if(it.on===undefined)it.on=true;})});return d}
+function load(){try{const r=localStorage.getItem(KEY);if(r){const d=JSON.parse(r);if(d&&d.days&&d.cities&&d.settings)return hydrate(d)}}catch(e){}return hydrate(clone(DEFAULT))}
+function syncNights(d){d.cities.forEach(c=>{c.nights=d.stays.filter(s=>s.city===c.id).reduce((a,s)=>a+s.nights,0)})}
+function selOpt(st){return st.opts.find(o=>o.id===st.sel)||st.opts[0]}
+function stayNights(){let n=1;return S.stays.map(st=>{const r={st,from:n};n+=st.nights;return r})}
+function stayForNight(i){const r=stayNights().find(x=>i>=x.from&&i<x.from+x.st.nights);return r?r.st:null}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+S=load();
+let selDay=0, selCity=null;
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function dateOf(i){const d=new Date(S.settings.start+'T12:00:00');d.setDate(d.getDate()+i);return d}
+const fmtDate=d=>d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+function money(eur){const c=S.settings.currency;const v=c==='CNY'?eur*S.settings.rate:eur;return (c==='CNY'?'¥':'€')+Math.round(v).toLocaleString('en-GB')}
+const cnyToEur=c=>c/S.settings.rate;
+function cityById(id){return S.cities.find(c=>c.id===id)}
+function cityName(id){return id==='air'?'In the air':(cityById(id)?.name||id)}
+
+function calc(){
+ const s=S.settings,T=s.travellers;
+ const flights=s.flightPP*T;
+ const hotels=S.stays.reduce((a,st)=>a+st.nights*selOpt(st).price,0);
+ const intercity=S.days.reduce((a,d)=>a+cnyToEur((+d.t.cny||0)*T),0);
+ const local=cnyToEur(s.localCNY);
+ const activities=S.days.reduce((a,d)=>a+d.items.filter(i=>i.on).reduce((b,i)=>b+cnyToEur((+i.c||0)*T),0),0);
+ const nDays=S.days.length-1;
+ const food=s.foodPP*nDays*T;
+ const extras=s.extrasPP*T;
+ const sub=flights+hotels+intercity+local+activities+food+extras;
+ const cont=sub*s.contingency/100;
+ return {cats:[
+   {k:'Flights Europe ⇄ China',v:flights,col:'var(--cobalt)'},
+   {k:'Hotels',v:hotels,col:'var(--cinnabar)'},
+   {k:'Food and drinks',v:food,col:'var(--amber)'},
+   {k:'Sights and activities',v:activities,col:'var(--jade)'},
+   {k:'Trains and domestic flights',v:intercity,col:'var(--cobalt)'},
+   {k:'Local transport',v:local,col:'var(--road)'},
+   {k:'eSIM, insurance top-up',v:extras,col:'var(--road)'},
+   {k:'Contingency ('+s.contingency+'%)',v:cont,col:'var(--muted)'}],
+  total:sub+cont,nDays};
+}
+function dayCost(d){const T=S.settings.travellers;return cnyToEur(((+d.t.cny||0)+d.items.filter(i=>i.on).reduce((a,i)=>a+(+i.c||0),0))*T)}
+
+function renderHeader(){
+ const r=calc(),s=S.settings;
+ $('#grandTotal').textContent=money(r.total);
+ $('#grandPP').textContent=money(r.total/s.travellers)+' per person · '+S.days.length+' days, '+S.cities.reduce((a,c)=>a+c.nights,0)+' nights';
+ $('#datesLine').textContent=S.cities.map(c=>c.name).join(' · ')+'. '+fmtDate(dateOf(0))+' to '+fmtDate(dateOf(S.days.length-1))+' 2027';
+ $('#cTravellers').value=s.travellers;$('#cRate').value=s.rate;$('#cFlight').value=s.flightPP;$('#cCur').value=s.currency;
+}
+
+/* ---------- Route ---------- */
+function proj(lat,lon){return [30+(lon-102)/22*540, 30+(42-lat)/18*360]}
+function renderRoute(){
+ const pts=S.cities.map(c=>({c,p:proj(c.lat,c.lon)}));
+ let g='';
+ for(let lon=105;lon<=124;lon+=5){const x=proj(30,lon)[0];g+=`<line x1="${x}" y1="20" x2="${x}" y2="400" stroke="var(--line)" stroke-width="1"/><text x="${x+3}" y="412" font-size="10" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${lon}°E</text>`}
+ for(let lat=25;lat<=40;lat+=5){const y=proj(lat,110)[1];g+=`<line x1="20" y1="${y}" x2="580" y2="${y}" stroke="var(--line)" stroke-width="1"/><text x="24" y="${y-4}" font-size="10" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${lat}°N</text>`}
+ // legs between consecutive cities
+ const legs=[];const order=S.days.map(d=>d.city).filter(c=>c!=='air');
+ for(let i=1;i<order.length;i++){if(order[i]!==order[i-1]){const day=S.days.find((d,j)=>d.city===order[i]&&(j===0||S.days[j-1].city!==order[i]));legs.push({a:order[i-1],b:order[i],mode:day?day.t.mode:'rail',label:day?day.t.label:''})}}
+ let lines='';
+ legs.forEach(l=>{const A=cityById(l.a),B=cityById(l.b);if(!A||!B)return;const [x1,y1]=proj(A.lat,A.lon),[x2,y2]=proj(B.lat,B.lon);
+  const mx=(x1+x2)/2,my=(y1+y2)/2,dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1,off=l.mode==='flight'?-0.22*len:-0.08*len;
+  const cx=mx+(-dy/len)*off,cy=my+(dx/len)*off;
+  const col=l.mode==='flight'?'var(--cobalt)':l.mode==='rail'?'var(--jade)':'var(--road)';
+  lines+=`<path d="M${x1},${y1} Q${cx},${cy} ${x2},${y2}" fill="none" stroke="${col}" stroke-width="2.5" ${l.mode==='flight'?'stroke-dasharray="6 6"':''} stroke-linecap="round"/>`;
+ });
+ // intl arrows
+ const B=proj(39.9,116.4),SH=proj(31.23,121.47);
+ lines+=`<path d="M${B[0]-150},${B[1]-50} Q${B[0]-70},${B[1]-70} ${B[0]-8},${B[1]-6}" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="3 5"/><text x="${B[0]-196}" y="${B[1]-56}" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">from Amsterdam</text>`;
+ lines+=`<path d="M${SH[0]},${SH[1]+8} Q${SH[0]+10},${SH[1]+60} ${SH[0]-30},${SH[1]+92}" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="3 5"/><text x="${SH[0]-120}" y="${SH[1]+104}" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans,sans-serif">home to Amsterdam</text>`;
+ let dots='';
+ pts.forEach(({c,p})=>{const on=selCity===c.id;const lx=c.id==='shanghai'?-12:12,anchor=c.id==='shanghai'?'end':'start';
+  dots+=`<g class="mapcity" data-city="${c.id}" style="cursor:pointer" tabindex="0" role="button" aria-label="${esc(c.name)}">
+   <circle cx="${p[0]}" cy="${p[1]}" r="${on?13:10}" fill="var(--sheet)" stroke="${CITY_COLORS[c.id]||'var(--cobalt)'}" stroke-width="3"/>
+   <circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${CITY_COLORS[c.id]||'var(--cobalt)'}"/>
+   <text x="${p[0]+lx}" y="${p[1]-14}" text-anchor="${anchor}" font-size="15" fill="var(--ink)" font-family="Young Serif,Georgia,serif">${esc(c.name)}</text>
+   <text x="${p[0]+lx}" y="${p[1]+22}" text-anchor="${anchor}" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${esc(c.zh||'')} · ${c.nights} nights</text></g>`});
+ const legCards=legs.map(l=>{const d=S.days.find(x=>x.city===l.b&&x.t.label===l.label);return `<div class="leg"><span class="mode m-${l.mode}">${l.mode==='rail'?'Train':l.mode==='flight'?'Flight':'Road'}</span><div style="margin-top:6px"><b>${esc(cityName(l.a))} → ${esc(cityName(l.b))}</b></div><div class="muted">${esc(l.label)}${d?' · '+money(cnyToEur(d.t.cny*S.settings.travellers))+' for the group':''}</div></div>`}).join('');
+ $('#v-route').innerHTML=`
+ <div class="route-grid">
+  <div class="mapbox">
+   <svg viewBox="0 0 600 420" role="img" aria-label="Route map of the four cities">${g}${lines}${dots}</svg>
+   <div class="legend"><span><i style="border-color:var(--jade)"></i>High-speed rail</span><span><i style="border-color:var(--cobalt);border-top-style:dashed"></i>Domestic flight</span><span><i style="border-color:var(--muted);border-top-style:dotted"></i>International flight</span></div>
+  </div>
+  <div class="city-list">
+   <div class="eyebrow">Tap a city to open its days</div>
+   ${S.cities.map(c=>`<button class="city ${selCity===c.id?'on':''}" data-city="${c.id}"><span class="dot" style="background:${CITY_COLORS[c.id]||'var(--cobalt)'}"></span><span><h3>${esc(c.name)}</h3><p>${esc(c.blurb)}</p><p style="margin-top:6px"><span class="eyebrow">Stay</span> ${esc(c.area)}</p></span><span class="nights">${c.nights} nights</span></button>`).join('')}
+  </div>
+ </div>
+ <div class="leg-strip">${legCards}</div>`;
+ document.querySelectorAll('#v-route [data-city]').forEach(el=>{const go=()=>{selCity=el.dataset.city;const i=S.days.findIndex(d=>d.city===selCity);if(i>=0)selDay=i;location.hash='days'};el.addEventListener('click',go);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go()}})});
+}
+
+/* ---------- Days ---------- */
+const KIND={see:'Must see',do:'Must do',eat:'Eat'};
+function renderDays(){
+ selDay=Math.max(0,Math.min(selDay,S.days.length-1));
+ const d=S.days[selDay];
+ const chips=S.days.map((x,i)=>`<button class="dchip ${i===selDay?'on':''}" data-i="${i}"><div class="d">Day ${i+1} · ${dateOf(i).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</div><div class="c">${esc(cityName(x.city))}</div><div class="bar" style="background:${CITY_COLORS[x.city]||'var(--cobalt)'}"></div></button>`).join('');
+ const T=S.settings.travellers;
+ const items=d.items.map((it,j)=>`<div class="item ${it.on?'':'off'}">
+   <input type="checkbox" id="on_${it.id}" data-j="${j}" class="tog" ${it.on?'checked':''} aria-label="Include ${esc(it.n)}">
+   <div><div><span class="kind k-${it.k}">${KIND[it.k]||it.k}</span><span class="iname">${esc(it.n)}</span></div><div class="idesc">${esc(it.d)}</div>${it.tip?`<div class="itip">${esc(it.tip)}</div>`:''}</div>
+   <div class="cost"><label class="eyebrow" for="c_${it.id}">¥ pp</label><input id="c_${it.id}" type="number" min="0" data-j="${j}" class="icost" value="${+it.c||0}"><span class="eur">${money(cnyToEur((+it.c||0)*T))} group</span><button class="del" data-j="${j}">Remove</button></div></div>`).join('');
+ const c=cityById(d.city);
+ const hs=stayForNight(selDay),ho=hs?selOpt(hs):null;
+ $('#v-days').innerHTML=`
+ <div class="timeline" id="tl">${chips}</div>
+ <div class="day">
+  <div style="min-width:0">
+   <div class="dayhead"><span class="when">Day ${selDay+1} · ${fmtDate(dateOf(selDay))}</span><span class="eyebrow" style="color:${CITY_COLORS[d.city]}">${esc(cityName(d.city))}</span></div>
+   <h2 style="margin-top:6px">${esc(d.title)}</h2>
+   <p class="dayintro">${esc(d.intro)}</p>
+   ${c&&c.w?`<div class="wx-strip"><span>July in ${esc(c.name)}</span><span><b>${c.w.lo}–${c.w.hi} °C</b></span><span><b>${c.w.rain} mm</b> rain</span><span><b>${c.w.days}</b> rainy days</span><span><b>${c.w.hum}%</b> humidity</span><span class="t">${esc(c.w.best)}</span></div>`:''}
+   <div class="transport"><span class="mode m-${d.t.mode}">${d.t.mode==='rail'?'Train':d.t.mode==='flight'?'Flight':d.t.mode==='road'?'Local':'None'}</span>
+    <div style="min-width:0"><b>${esc(d.t.label)}</b><div class="muted" style="font-size:13.5px">${esc(d.t.detail)}</div></div>
+    <div class="cost"><label class="eyebrow" for="tc_${d.id}">¥ pp</label><input id="tc_${d.id}" type="number" min="0" value="${+d.t.cny||0}" class="tcost"></div></div>
+   ${hs?`<div class="tonight"><span class="moon">Tonight</span><div style="min-width:0"><b>${esc(ho.name)}</b>${ho.score?` <span class="num" style="color:${scoreTone(+ho.score)}">${(+ho.score).toFixed(1)}</span>`:''}<div class="muted" style="font-size:13.5px">${esc(ho.room||'')}</div></div><a href="#hotels" data-jumpstay="${hs.id}">Change</a></div>`:''}
+   <div class="items">${items||'<p class="muted">No activities yet. Add one on the right.</p>'}</div>
+   <div class="navbtns"><button class="btn ghost" id="prevD" ${selDay===0?'disabled':''}>← Previous day</button><button class="btn ghost" id="nextD" ${selDay===S.days.length-1?'disabled':''}>Next day →</button></div>
+  </div>
+  <aside class="side">
+   <div class="panel"><h3>This day</h3><div class="kv">
+    <span>Transport</span><span class="v">${money(cnyToEur((+d.t.cny||0)*T))}</span>
+    <span>Activities selected</span><span class="v">${money(cnyToEur(d.items.filter(i=>i.on).reduce((a,i)=>a+(+i.c||0),0)*T))}</span>
+    ${hs?`<span>Hotel tonight</span><span class="v">${money(ho.price)}</span>`:''}
+    <span>Food allowance</span><span class="v">${money(S.settings.foodPP*T)}</span>
+    <span class="sum">Day total, group</span><span class="v sum">${money(dayCost(d)+(hs?ho.price:0)+S.settings.foodPP*T)}</span></div>
+    <p class="note">Hotel is the night after this day. Prices in yuan are per person; the group figure multiplies by ${T}.</p></div>
+   <div class="panel"><h3>Add to this day</h3>
+    <form class="addform" id="addForm">
+     <label for="aName" class="eyebrow">Name</label><input id="aName" required placeholder="e.g. Lama Temple">
+     <label for="aDesc" class="eyebrow">Notes</label><textarea id="aDesc" rows="2" placeholder="Opening hours, why it matters"></textarea>
+     <div class="row2"><div><label for="aKind" class="eyebrow">Type</label><select id="aKind"><option value="see">Must see</option><option value="do">Must do</option><option value="eat">Eat</option></select></div>
+     <div><label for="aCost" class="eyebrow">¥ per person</label><input id="aCost" type="number" min="0" value="0"></div></div>
+     <button class="btn" type="submit">Add activity</button></form></div>
+  </aside>
+ </div>`;
+ const tl=$('#tl'),on=tl.querySelector('.on');if(on)tl.scrollLeft=on.offsetLeft-tl.clientWidth/2+on.clientWidth/2;
+ tl.querySelectorAll('.dchip').forEach(b=>b.onclick=()=>{selDay=+b.dataset.i;selCity=S.days[selDay].city;renderDays()});
+ document.querySelectorAll('[data-jumpstay]').forEach(a=>a.onclick=e=>{e.preventDefault();const id=a.dataset.jumpstay;location.hash='hotels';setTimeout(()=>{const t=document.getElementById('stay-'+id);if(t)t.scrollIntoView({block:'start'})},30)});
+ $('#prevD').onclick=()=>{selDay--;renderDays()};$('#nextD').onclick=()=>{selDay++;renderDays()};
+ document.querySelectorAll('.tog').forEach(el=>el.onchange=()=>{d.items[+el.dataset.j].on=el.checked;commit(true)});
+ document.querySelectorAll('.icost').forEach(el=>el.onchange=()=>{d.items[+el.dataset.j].c=Math.max(0,+el.value||0);commit(true)});
+ document.querySelectorAll('.del').forEach(el=>el.onclick=()=>{const it=d.items.splice(+el.dataset.j,1)[0];commit(true);toast('Removed '+it.n)});
+ $('.tcost').onchange=e=>{d.t.cny=Math.max(0,+e.target.value||0);commit(true)};
+ $('#addForm').onsubmit=e=>{e.preventDefault();const n=$('#aName').value.trim();if(!n)return;d.items.push({id:'u'+Date.now(),k:$('#aKind').value,n,d:$('#aDesc').value.trim(),c:Math.max(0,+$('#aCost').value||0),on:true});commit(true);toast('Added '+n)};
+}
+
+/* ---------- Budget ---------- */
+function renderBudget(){
+ const r=calc(),s=S.settings,max=Math.max(...r.cats.map(c=>c.v));
+ const bars=r.cats.map(c=>`<div class="brow"><span>${esc(c.k)}</span><div class="track"><div class="fill" style="width:${(c.v/max*100).toFixed(1)}%;background:${c.col}"></div></div><span class="v">${money(c.v)}</span></div>`).join('');
+ const hotelRows=S.stays.map((st,i)=>{const o=selOpt(st);return `<tr><td><b>${esc(st.name)}</b><div class="muted" style="font-size:12.5px">${esc(o.name)}</div></td><td class="n"><input id="bn_${st.id}" type="number" min="0" data-st="${i}" data-f="nights" value="${st.nights}" aria-label="${esc(st.name)} nights"></td><td class="n"><input id="br_${st.id}" type="number" min="0" step="5" data-st="${i}" data-f="price" value="${o.price}" aria-label="${esc(st.name)} price per night"></td><td class="n">${money(st.nights*o.price)}</td></tr>`}).join('');
+ const dayRows=S.days.map((d,i)=>`<tr><td class="mono" style="white-space:nowrap">${dateOf(i).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</td><td>${esc(cityName(d.city))}</td><td>${esc(d.title)}</td><td class="n">${money(dayCost(d))}</td></tr>`).join('');
+ $('#v-budget').innerHTML=`
+ <div class="stat-row">
+  <div class="stat"><div class="eyebrow">Group total</div><div class="v num">${money(r.total)}</div></div>
+  <div class="stat"><div class="eyebrow">Per person</div><div class="v num">${money(r.total/s.travellers)}</div></div>
+  <div class="stat"><div class="eyebrow">Per person per day</div><div class="v num">${money(r.total/s.travellers/S.days.length)}</div></div>
+  <div class="stat"><div class="eyebrow">Spent in China</div><div class="v num">${money(r.total-r.cats[0].v)}</div></div>
+ </div>
+ <div class="bgrid">
+  <div style="min-width:0">
+   <h2>Where the money goes</h2>
+   <div class="bars" style="margin-top:16px">${bars}</div>
+   <p class="note">July is the most expensive month to fly. Direct return fares in economy have run roughly €950 to €1,400 per person in recent summers; booking in January or February usually lands at the lower end. Change the fare in the bar above.</p>
+   <h3 style="margin-top:28px">Daily rates you can tune</h3>
+   <div class="tbl-wrap" style="margin-top:8px"><table><tbody>
+    <tr><td>Food and drinks, € per person per day</td><td class="n"><input id="bFood" type="number" min="0" value="${s.foodPP}"></td></tr>
+    <tr><td>Local transport for the whole trip, ¥ for the group</td><td class="n"><input id="bLocal" type="number" min="0" step="100" value="${s.localCNY}"></td></tr>
+    <tr><td>eSIM and insurance top-up, € per person</td><td class="n"><input id="bExtras" type="number" min="0" value="${s.extrasPP}"></td></tr>
+    <tr><td>Contingency, %</td><td class="n"><input id="bCont" type="number" min="0" max="50" value="${s.contingency}"></td></tr>
+   </tbody></table></div>
+  </div>
+  <div style="min-width:0">
+   <h2>Hotels</h2>
+   <p class="note" style="margin-top:6px">Your selected hotel for each stay, € per night for all four. Compare options on the <a href="#hotels" style="color:var(--cobalt)">Hotels</a> tab.</p>
+   <div class="tbl-wrap" style="margin-top:10px"><table><thead><tr><th>Stay</th><th class="n">Nights</th><th class="n">€/night</th><th class="n">Total</th></tr></thead><tbody>${hotelRows}</tbody></table></div>
+   <h3 style="margin-top:24px">Transport and sights by day</h3>
+   <div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Date</th><th>City</th><th>Plan</th><th class="n">Group</th></tr></thead><tbody>${dayRows}</tbody></table></div>
+  </div>
+ </div>`;
+ document.querySelectorAll('#v-budget input[data-st]').forEach(el=>el.onchange=()=>{const st=S.stays[+el.dataset.st],v=Math.max(0,+el.value||0);if(el.dataset.f==='nights')st.nights=v;else selOpt(st).price=v;commit()});
+ const bind=(id,f)=>$(id).onchange=e=>{S.settings[f]=Math.max(0,+e.target.value||0);commit()};
+ bind('#bFood','foodPP');bind('#bLocal','localCNY');bind('#bExtras','extrasPP');bind('#bCont','contingency');
+}
+
+/* ---------- Essentials ---------- */
+function renderEssentials(){
+ $('#v-essentials').innerHTML=`
+ <div class="ess">
+  <div class="card alert"><h3>Visa: check again in spring 2027</h3>
+   <p style="font-size:14px">Dutch passport holders can currently enter China without a visa for up to 30 days. China has extended this policy for the Netherlands until 31 December 2026. It does not yet cover July 2027. Past extensions have been announced a few weeks to a few months before expiry, so check the Chinese Embassy in The Hague around March 2027. If it lapses, apply for a tourist (L) visa through the China Visa Application Service Centre in The Hague.</p></div>
+  <div class="card alert"><h3>Tianmen Mountain cableway</h3>
+   <p style="font-size:14px">The long main cableway stopped carrying passengers on 13 October 2026 for reconstruction, with no reopening date. The summit, the cave and the skywalk remain open through Route C (cave express cableway and escalators). The itinerary already assumes Route C. Check the operator's notice a week before you go.</p></div>
+  <div class="card"><h3>When to book</h3>
+   <div class="book">
+    <span class="w">Now – Feb</span><span>Flights. Cheapest about six months out; pick KLM to Beijing and back from Shanghai (open-jaw).</span>
+    <span class="w">Now – Mar</span><span>Hotels with free cancellation, especially in Wulingyuan, which fills up in July.</span>
+    <span class="w">15 days</span><span>High-speed train tickets go on sale (12306 app or Trip.com in English).</span>
+    <span class="w">7 days</span><span>Forbidden City (20:00 Beijing time), Terracotta Army, Shaanxi History Museum, Tiananmen Square.</span>
+    <span class="w">3–5 days</span><span>Zhangjiajie Forest Park, Glass Bridge and Tianmen Mountain timed tickets.</span>
+   </div></div>
+  <div class="card"><h3>Student discounts</h3>
+   <p style="font-size:14px">Most Chinese sites limit student prices to students enrolled in mainland China, and Tianmen Mountain states this explicitly. The budget therefore uses full adult prices for everyone. Bring student cards anyway; a few museums and private attractions accept international ones.</p></div>
+  <div class="card"><h3>July weather</h3>
+   <p style="font-size:14px">Expect heat, humidity and showers everywhere. Full city-by-city figures are on the <a href="#weather" style="color:var(--cobalt)">Weather</a> tab. Check the 10-day forecast a week before departure and again in each city.</p>
+   <ul style="margin-top:8px"><li>Pack light rain jackets, sun hats, walking shoes with grip, sandals for rafting and a small towel.</li></ul></div>
+  <div class="card"><h3>Money and phones</h3>
+   <ul><li>Link a Visa or Mastercard to Alipay and WeChat Pay before leaving. Almost everything is paid by QR code.</li>
+   <li>Carry some cash (around ¥500 each) as a fallback.</li>
+   <li>A roaming eSIM gives data on arrival. Google, WhatsApp and most Western social apps do not work on Chinese local networks.</li>
+   <li>Useful apps: Trip.com, Railway 12306, Amap or Apple Maps, DiDi (inside Alipay), a translator.</li></ul></div>
+  <div class="card"><h3>Your passport is your ticket</h3>
+   <ul><li>Trains, museums, parks and hotels all check the physical passport.</li>
+   <li>Book each person's tickets under their own passport number and check every digit; most tickets cannot be changed.</li>
+   <li>Keep photos of each passport on two phones.</li></ul></div>
+  <div class="card"><h3>Pace and health</h3>
+   <ul><li>Zhangjiajie days involve a lot of stairs. Comfortable for fit adults; plan a slower afternoon on day 13. Three weeks is long in July heat; the Chengdu and Yangshuo days are deliberately lighter.</li>
+   <li>Drink bottled water; tap water is not drinkable.</li>
+   <li>Check your Dutch travel insurance covers China and any adventure activities such as the glass bridge.</li></ul></div>
+ </div>
+ <p class="src">Sources consulted (November 2026): <a href="https://bio.visaforchina.cn/HAG3_EN/tongzhigonggao/524123699746574336.html" target="_blank" rel="noopener">Chinese visa centre, The Hague</a> · <a href="https://www.zhangjiajieguide.com/travel-notices/tianmen-mountain-cableway-suspension.html" target="_blank" rel="noopener">Tianmen cableway notice</a> · <a href="https://www.zhangjiajieguide.com/attractions/tianmen-mountain/tickets.html" target="_blank" rel="noopener">Tianmen tickets</a> · <a href="https://chinafortravelers.com/tools/rail-map/beijing-to-xian/" target="_blank" rel="noopener">Beijing–Xi'an rail fares</a> · <a href="https://www.zhangjiajieguide.com/attractions/grand-canyon/" target="_blank" rel="noopener">Glass Bridge tickets</a>. Prices change; treat every figure as an estimate.</p>`;
+}
+
+/* ---------- Weather ---------- */
+function cityDates(id){const idx=S.days.map((d,i)=>d.city===id?i:-1).filter(i=>i>=0);if(!idx.length)return '';const f=dateOf(idx[0]),l=dateOf(idx[idx.length-1]);const o={day:'numeric',month:'short'};return f.toLocaleDateString('en-GB',o)+(idx.length>1?' – '+l.toLocaleDateString('en-GB',o):'')}
+function renderWeather(){
+ const cs=S.cities.filter(c=>c.w);
+ const W=600,rowH=40,top=34,left=150,right=24,tMin=15,tMax=40;
+ const x=t=>left+(t-tMin)/(tMax-tMin)*(W-left-right);
+ const H=top+cs.length*rowH+10;
+ let ticks='';for(let t=15;t<=40;t+=5){ticks+=`<line x1="${x(t)}" y1="${top-8}" x2="${x(t)}" y2="${H-6}" stroke="var(--line)"/><text x="${x(t)}" y="${top-14}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${t}°</text>`}
+ let rows='';cs.forEach((c,i)=>{const y=top+i*rowH+rowH/2,col=CITY_COLORS[c.id]||'var(--cobalt)';
+  rows+=`<text x="0" y="${y+4}" font-size="13" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">${esc(c.name)}</text>
+  <line x1="${x(c.w.lo)}" y1="${y}" x2="${x(c.w.hi)}" y2="${y}" stroke="${col}" stroke-width="10" stroke-linecap="round"/>
+  <text x="${x(c.w.lo)-10}" y="${y+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${c.w.lo}°</text>
+  <text x="${x(c.w.hi)+10}" y="${y+4}" font-size="11" fill="var(--ink)" font-family="IBM Plex Mono,monospace">${c.w.hi}°</text>`});
+ const rMax=250,rx=r=>left+r/rMax*(W-left-right-60);
+ let rticks='';for(let r=0;r<=250;r+=50){rticks+=`<line x1="${rx(r)}" y1="${top-8}" x2="${rx(r)}" y2="${H-6}" stroke="var(--line)"/><text x="${rx(r)}" y="${top-14}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Mono,monospace">${r}</text>`}
+ let rrows='';cs.forEach((c,i)=>{const y=top+i*rowH+rowH/2;
+  rrows+=`<text x="0" y="${y+4}" font-size="13" fill="var(--ink)" font-family="IBM Plex Sans,sans-serif">${esc(c.name)}</text>
+  <rect x="${left}" y="${y-8}" width="${Math.max(2,rx(c.w.rain)-left)}" height="16" rx="4" fill="var(--cobalt)" opacity=".85"/>
+  <text x="${rx(c.w.rain)+8}" y="${y+4}" font-size="11" fill="var(--ink)" font-family="IBM Plex Mono,monospace">${c.w.rain} mm · ${c.w.days} days</text>`});
+ $('#v-weather').innerHTML=`
+ <div style="max-width:70ch"><h2>What July feels like on this route</h2>
+ <p class="note" style="margin-top:6px">Long-term averages for July. Every stop is hot and humid; the real differences are in rain and sunshine. Zhangjiajie and Guilin are the wettest, Xi’an the driest, Chengdu the mildest.</p></div>
+ <div class="bgrid" style="margin-top:18px">
+  <div class="chart" style="min-width:0"><div class="eyebrow" style="margin-bottom:6px">Daily low to high, °C</div>
+   <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Average July temperature range per city">${ticks}${rows}</svg></div>
+  <div class="chart" style="min-width:0"><div class="eyebrow" style="margin-bottom:6px">Monthly rainfall, mm, and rainy days</div>
+   <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Average July rainfall per city">${rticks}${rrows}</svg></div>
+ </div>
+ <div class="wxcards">${cs.map(c=>`<article class="wxc">
+   <div class="top"><h3 style="color:${CITY_COLORS[c.id]}">${esc(c.name)}</h3><span class="dates">${cityDates(c.id)}</span></div>
+   <div class="wxnums"><div><div class="v">${c.w.lo}–${c.w.hi}°</div><div class="l">Low–high</div></div><div><div class="v">${c.w.rain}</div><div class="l">mm rain</div></div><div><div class="v">${c.w.days}</div><div class="l">Rainy days</div></div><div><div class="v">${c.w.hum}%</div><div class="l">Humidity</div></div></div>
+   <p>${esc(c.w.feel)}</p>
+   <p><span class="lab">Best hours</span>${esc(c.w.best)}</p>
+   <p><span class="lab">Pack</span>${esc(c.w.wear)}</p></article>`).join('')}</div>
+ <p class="src">Climate figures: Travel China Guide July weather pages for <a href="https://www.travelchinaguide.com/cityguides/xian/weather-july.htm" target="_blank" rel="noopener">Xi’an</a>, <a href="https://www.travelchinaguide.com/cityguides/sichuan/chengdu/weather-july.htm" target="_blank" rel="noopener">Chengdu</a>, <a href="https://www.travelchinaguide.com/cityguides/hunan/zhangjiajie/weather-july.htm" target="_blank" rel="noopener">Zhangjiajie</a>, <a href="https://www.travelchinaguide.com/cityguides/guangxi/guilin/weather-july.htm" target="_blank" rel="noopener">Guilin</a> and <a href="https://www.travelchinaguide.com/cityguides/shanghai/weather-july.htm" target="_blank" rel="noopener">Shanghai</a>; <a href="https://www.asiaodysseytravel.com/beijing/july-weather.html" target="_blank" rel="noopener">Asia Odyssey</a> for Beijing. These are averages, not forecasts.</p>`;
+}
+
+/* ---------- Hotels ---------- */
+let hFilter='all', hSort='rec';
+const TYPE_LABEL={family:'Family room',apartment:'Apartment',rooms:'Two rooms',custom:'Your pick'};
+function scoreTone(v){return v>=9.5?'var(--jade)':v>=9?'var(--cobalt)':'var(--amber)'}
+function stayRange(st){const r=stayNights().find(x=>x.st===st);if(!r)return '';const o={weekday:'short',day:'numeric',month:'short'};return dateOf(r.from).toLocaleDateString('en-GB',o)+' → '+dateOf(r.from+st.nights).toLocaleDateString('en-GB',o)}
+function renderHotels(){
+ const total=S.stays.reduce((a,st)=>a+st.nights*selOpt(st).price,0),nights=S.stays.reduce((a,st)=>a+st.nights,0);
+ const fams=S.stays.filter(st=>['family','apartment'].includes(selOpt(st).type)).length;
+ const avgScore=(S.stays.reduce((a,st)=>a+(+selOpt(st).score||0),0)/S.stays.length).toFixed(1);
+ const sections=S.stays.map((st,si)=>{
+  let opts=st.opts.map((o,oi)=>({o,oi}));
+  if(hFilter==='family')opts=opts.filter(x=>['family','apartment','custom'].includes(x.o.type)||x.o.id===st.sel);
+  if(hFilter==='top')opts=opts.filter(x=>(+x.o.score||0)>=9.5||x.o.id===st.sel);
+  if(hSort==='score')opts.sort((a,b)=>(+b.o.score||0)-(+a.o.score||0));
+  if(hSort==='price')opts.sort((a,b)=>a.o.price-b.o.price);
+  const c=cityById(st.city),col=CITY_COLORS[st.city]||'var(--cobalt)';
+  const cards=opts.map(({o,oi})=>{const on=o.id===st.sel;return `<article class="hcard ${on?'on':''}" style="--c:${col}">
+    <div class="hhead"><div style="min-width:0"><div class="htype t-${o.type}">${TYPE_LABEL[o.type]||o.type}</div><h3>${esc(o.name)}</h3><div class="harea">${esc(o.area||'')}</div></div>
+     ${o.score?`<div class="hscore" style="--t:${scoreTone(+o.score)}"><span class="num">${(+o.score).toFixed(1)}</span><small>${esc(o.src||'')}${o.reviews?' · '+o.reviews.toLocaleString('en-GB'):''}</small></div>`:''}</div>
+    ${o.alt?`<div class="halt">Also ${esc(o.alt)}</div>`:''}
+    <div class="hroom"><span class="lab">Sleeping four</span>${esc(o.room||'')}<span class="units">${esc(o.units||'')}</span></div>
+    ${o.access&&o.access.length?`<dl class="hacc">${o.access.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`:''}
+    ${o.why?`<p class="hwhy">${esc(o.why)}</p>`:''}
+    <div class="hfoot">
+     <label class="hprice" for="hp_${o.id}"><span class="eyebrow">€ per night, all 4</span><input id="hp_${o.id}" type="number" min="0" step="5" value="${o.price}" data-s="${si}" data-o="${oi}" class="hpin"></label>
+     <span class="htot num">${money(o.price*st.nights)}<small> for ${st.nights} night${st.nights===1?'':'s'}</small></span>
+    </div>
+    <div class="hactions">
+     ${on?`<span class="pill-on">✓ Selected</span>`:`<button class="btn ghost hpick" data-s="${si}" data-id="${o.id}">Choose this hotel</button>`}
+     ${o.url?`<a class="hlink" href="${esc(o.url)}" target="_blank" rel="noopener">View on ${esc(o.src||'site')} ↗</a>`:''}
+     ${o.type==='custom'?`<button class="del hdel" data-s="${si}" data-o="${oi}">Remove</button>`:''}
+    </div></article>`}).join('');
+  return `<section class="stay" id="stay-${st.id}">
+   <div class="stayhead">
+    <div style="min-width:0"><div class="eyebrow" style="color:${col}">${esc(c?c.name:'')}</div><h2>${esc(st.name)}</h2>
+     <div class="staydates num">${stayRange(st)}</div></div>
+    <div class="stepper" role="group" aria-label="Nights in ${esc(st.name)}"><button class="nminus" data-s="${si}" aria-label="One night fewer">−</button><span class="num">${st.nights}</span><span class="muted">nights</span><button class="nplus" data-s="${si}" aria-label="One night more">+</button></div>
+   </div>
+   <div class="arrlv"><span><b>Arrive</b> ${esc(st.arrive||'')}</span><span><b>Leave</b> ${esc(st.leave||'')}</span></div>
+   <div class="hgrid">${cards||'<p class="muted">No option matches this filter. Show all to see the others.</p>'}</div>
+   <details class="hadd"><summary>Add your own hotel for ${esc(st.name)}</summary>
+    <form class="addform hform" data-s="${si}">
+     <div class="row2"><div><label class="eyebrow" for="hn_${st.id}">Hotel name</label><input id="hn_${st.id}" required></div><div><label class="eyebrow" for="hu_${st.id}">Link (optional)</label><input id="hu_${st.id}" type="url" placeholder="https://"></div></div>
+     <div class="row2"><div><label class="eyebrow" for="hpr_${st.id}">€ per night, all 4</label><input id="hpr_${st.id}" type="number" min="0" value="120"></div><div><label class="eyebrow" for="hs_${st.id}">Score /10 (optional)</label><input id="hs_${st.id}" type="number" min="0" max="10" step="0.1"></div></div>
+     <button class="btn" type="submit">Add and select</button></form></details>
+  </section>`}).join('');
+ $('#v-hotels').innerHTML=`
+ <div class="stat-row">
+  <div class="stat"><div class="eyebrow">Hotels, ${nights} nights</div><div class="v num">${money(total)}</div></div>
+  <div class="stat"><div class="eyebrow">Average per night</div><div class="v num">${money(total/Math.max(1,nights))}</div></div>
+  <div class="stat"><div class="eyebrow">One room for all four</div><div class="v num">${fams} of ${S.stays.length} stays</div></div>
+  <div class="stat"><div class="eyebrow">Average guest score</div><div class="v num">${avgScore}</div></div>
+ </div>
+ <div class="hbar">
+  <div class="chips" role="group" aria-label="Filter hotels">
+   <button class="chip ${hFilter==='all'?'on':''}" data-f="all">All options</button>
+   <button class="chip ${hFilter==='family'?'on':''}" data-f="family">One room or apartment for 4</button>
+   <button class="chip ${hFilter==='top'?'on':''}" data-f="top">Score 9.5 and up</button>
+  </div>
+  <label class="ctl" for="hSort">Sort <select id="hSort"><option value="rec">Recommended</option><option value="score">Highest score</option><option value="price">Lowest price</option></select></label>
+ </div>
+ <nav class="staynav" aria-label="Jump to a stay">${S.stays.map(st=>`<a href="#hotels" data-jump="${st.id}"><i style="background:${CITY_COLORS[st.city]}"></i>${esc(st.name)} <span class="num">${st.nights}n</span><b>${esc(selOpt(st).name)}</b></a>`).join('')}</nav>
+ ${sections}
+ <p class="src">Every option scored above 8 out of 10 on Trip.com or Booking.com when checked in November 2026; most score 9 or higher. Prices are our July estimates for the whole family per night, based on the platforms’ listed rates plus summer peak and a room for four. Edit any price to match the quote you get. Confirm that the room sleeps four adults before booking, and choose free cancellation while plans settle.</p>`;
+ $('#hSort').value=hSort;
+ document.querySelectorAll('#v-hotels .chip').forEach(b=>b.onclick=()=>{hFilter=b.dataset.f;renderHotels()});
+ $('#hSort').onchange=e=>{hSort=e.target.value;renderHotels()};
+ document.querySelectorAll('.hpick').forEach(b=>b.onclick=()=>{const st=S.stays[+b.dataset.s];st.sel=b.dataset.id;commit();toast(selOpt(st).name+' selected for '+st.name)});
+ document.querySelectorAll('.hpin').forEach(el=>el.onchange=()=>{S.stays[+el.dataset.s].opts[+el.dataset.o].price=Math.max(0,+el.value||0);commit()});
+ document.querySelectorAll('.hdel').forEach(b=>b.onclick=()=>{const st=S.stays[+b.dataset.s],o=st.opts.splice(+b.dataset.o,1)[0];if(st.sel===o.id)st.sel=st.opts[0].id;commit();toast('Removed '+o.name)});
+ document.querySelectorAll('.nminus,.nplus').forEach(b=>b.onclick=()=>{const st=S.stays[+b.dataset.s];st.nights=Math.max(0,st.nights+(b.classList.contains('nplus')?1:-1));commit()});
+ document.querySelectorAll('.hform').forEach(f=>f.onsubmit=e=>{e.preventDefault();const st=S.stays[+f.dataset.s];const g=k=>f.querySelector('#'+k+'_'+st.id).value.trim();
+  const name=g('hn');if(!name)return;const url=g('hu');const id='c'+Date.now();
+  st.opts.push({id,name,area:'Added by you',score:+g('hs')||null,src:url?'link':'',reviews:null,room:'Check that the room sleeps four',units:'',type:'custom',price:Math.max(0,+g('hpr')||0),access:[],why:'',url:/^https?:\/\//.test(url)?url:''});
+  st.sel=id;commit();toast(name+' added and selected')});
+ document.querySelectorAll('[data-jump]').forEach(a=>a.onclick=e=>{e.preventDefault();const t=document.getElementById('stay-'+a.dataset.jump);if(t)t.scrollIntoView({behavior:'smooth',block:'start'})});
+}
+
+/* ---------- Customise ---------- */
+function renderCustomise(){
+ $('#v-customise').innerHTML=`
+ <div class="bgrid">
+  <div style="min-width:0">
+   <h2>Cities and nights</h2>
+   <p class="note">Rename a city or change its stay area. Change nights on the Hotels tab, and day plans on the Day by day tab.</p>
+   <div class="tbl-wrap" style="margin-top:10px"><table><thead><tr><th>City</th><th>Stay area</th><th class="n">Nights</th></tr></thead><tbody>
+   ${S.cities.map((c,i)=>`<tr><td><input id="cn_${c.id}" data-i="${i}" data-f="name" value="${esc(c.name)}" style="width:120px;text-align:left"></td><td><input id="ca_${c.id}" data-i="${i}" data-f="area" value="${esc(c.area)}" style="width:100%;min-width:180px;text-align:left"></td><td class="n num">${c.nights}</td></tr>`).join('')}
+   </tbody></table></div>
+   <h3 style="margin-top:24px">Start date</h3>
+   <p class="note">Every day shifts with it. A Saturday departure keeps the Forbidden City off a Monday.</p>
+   <input id="cStart" type="date" value="${S.settings.start}" style="margin-top:8px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:var(--paper)">
+   <h3 style="margin-top:24px">Day titles</h3>
+   <div class="tbl-wrap" style="margin-top:8px"><table><tbody>
+   ${S.days.map((d,i)=>`<tr><td class="mono" style="white-space:nowrap">Day ${i+1}</td><td><input id="dt_${d.id}" data-d="${i}" value="${esc(d.title)}" style="width:100%;min-width:200px;text-align:left"></td></tr>`).join('')}
+   </tbody></table></div>
+  </div>
+  <div style="min-width:0">
+   <h2>Save and share your version</h2>
+   <p class="note">Your changes are kept in this browser. To move them to another device or send them to the family, copy the plan below and paste it into the box on the other device.</p>
+   <textarea class="json" id="exportBox" readonly aria-label="Plan data">${esc(JSON.stringify(S))}</textarea>
+   <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn" id="copyBtn">Copy plan</button></div>
+   <label for="importBox" class="eyebrow" style="display:block;margin-top:20px">Paste a plan to load it</label>
+   <textarea class="json" id="importBox" style="min-height:110px;margin-top:6px"></textarea>
+   <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn ghost" id="importBtn">Load pasted plan</button></div>
+   <div class="panel" style="margin-top:24px"><h3>Start over</h3><p class="note" style="margin-top:0">Restores the original itinerary and budget. Your edits are lost.</p>
+    <div style="margin-top:10px"><button class="btn warn" id="resetBtn">Reset to original</button> <span id="resetConfirm" hidden><button class="btn warn" id="resetYes">Yes, reset</button></span></div></div>
+  </div>
+ </div>`;
+ document.querySelectorAll('#v-customise input[data-i]').forEach(el=>el.onchange=()=>{const c=S.cities[+el.dataset.i],f=el.dataset.f;c[f]=f==='nights'?Math.max(0,+el.value||0):el.value;commit()});
+ document.querySelectorAll('#v-customise input[data-d]').forEach(el=>el.onchange=()=>{S.days[+el.dataset.d].title=el.value;commit()});
+ $('#cStart').onchange=e=>{if(e.target.value){S.settings.start=e.target.value;commit()}};
+ $('#copyBtn').onclick=()=>{const t=$('#exportBox');const ok=()=>toast('Plan copied');try{navigator.clipboard.writeText(t.value).then(ok).catch(()=>{t.select();toast('Selected. Press Ctrl or ⌘ + C')})}catch(e){t.select();toast('Selected. Press Ctrl or ⌘ + C')}};
+ $('#importBtn').onclick=()=>{try{const d=JSON.parse($('#importBox').value);if(!d.days||!d.cities||!d.settings)throw 0;S=hydrate(d);commit();toast('Plan loaded')}catch(e){toast('That text is not a valid plan. Copy it again from the other device.')}};
+ $('#resetBtn').onclick=()=>{$('#resetConfirm').hidden=false};
+ $('#resetYes').onclick=()=>{S=hydrate(clone(DEFAULT));selDay=0;selCity=null;commit();toast('Original plan restored')};
+}
+
+/* ---------- shell ---------- */
+const VIEWS={route:renderRoute,weather:renderWeather,days:renderDays,hotels:renderHotels,budget:renderBudget,essentials:renderEssentials,customise:renderCustomise};
+function current(){const h=location.hash.replace('#','');return VIEWS[h]?h:'route'}
+function show(){const v=current();Object.keys(VIEWS).forEach(k=>{$('#v-'+k).hidden=k!==v});document.querySelectorAll('nav.tabs a').forEach(a=>a.toggleAttribute('aria-current',a.dataset.v===v)&&a.setAttribute('aria-current','page'));VIEWS[v]();renderHeader()}
+function commit(keepView){syncNights(S);save();renderHeader();VIEWS[current()]()}
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
+[['#cTravellers','travellers',1],['#cRate','rate',0.1],['#cFlight','flightPP',0]].forEach(([id,f,min])=>$(id).addEventListener('change',e=>{S.settings[f]=Math.max(min,+e.target.value||min);commit()}));
+$('#cCur').addEventListener('change',e=>{S.settings.currency=e.target.value;commit()});
+window.addEventListener('hashchange',show);
+show();
+</script>
+
+</body>
+</html>
